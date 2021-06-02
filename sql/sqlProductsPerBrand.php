@@ -1,7 +1,7 @@
 <?php
-    include("../class/classProduct.php");
-    include("../class/classDb.php");
-    include("../class/classXML.php");
+    include("../class/Product.php");
+    include("../class/DB.php");
+    include("../class/XML.php");
     
     set_time_limit(0);
     ini_set('max_execution_time', 3000);
@@ -11,13 +11,12 @@
     
     $isDiscontinued = $_POST['isDiscontinued'];
     
-    $xml = new xmlFile($_SERVER["DOCUMENT_ROOT"].'/dbXML.xml');
-    $db = new dbConnection($xml->getConnectionArray());
+    $xml = new XML($_SERVER["DOCUMENT_ROOT"].'/dbXML.xml');
+    $db = new DB($xml->getConnectionArray());
     
-    $product = new product($db->getDbConnection(2));
+    $product = new Product($db->getDbConnection(2));
 
     
     $allProductsFromBrand = $product->allProdFromBrand($brandName,$isDiscontinued);
     
     echo "<input type = 'hidden' id='array' value='".json_encode($allProductsFromBrand,true)."'/>";
-?>

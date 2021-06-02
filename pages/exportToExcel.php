@@ -5,19 +5,20 @@ ini_set('display_startup_errors', TRUE);
 date_default_timezone_set('Europe/London');
 ini_set('max_input_vars', 9000);
 
-include("../class/classDb.php");
-include("../class/classProductManage.php");	
+require $_SERVER['DOCUMENT_ROOT']. '\margin\vendor\autoload.php';
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-$product = new productMan();
+$product = new ProductManage();
 
 $productsArray = json_decode($_POST['array']);
 $brand = $_POST['brand'];
 
 //echo "in excel file<br/>";
 
-require_once dirname(__FILE__) . '/../class/Excel/PHPExcel.php';
 
-$objPHPExcel = new PHPExcel();
+
+$objPHPExcel = new Spreadsheet();
 
 $cellArray = array("D","E","G","H","J","K","M","N","P","Q");
 
@@ -39,11 +40,12 @@ $objPHPExcel->getProperties()->setCreator("Robert Kocjan")
             ->setCellValue('F1', 'New retail')
             ->setCellValue('G1', 'New margin')
             ->setCellValue('H1', 'Barcode')
-            ->setCellValue('I1', 'Tax');
+            ->setCellValue('I1', 'Tax')
+            ->setCellValue('J1', 'Discount');
     
-    $objPHPExcel->getActiveSheet()->getStyle('A1:I1')->getFont()->setBold(true);
-    $objPHPExcel->getActiveSheet()->getStyle('A1:I1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
-    $objPHPExcel->getActiveSheet()->getStyle('A1:I1')->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+    $objPHPExcel->getActiveSheet()->getStyle('A1:J1')->getFont()->setBold(true);
+    $objPHPExcel->getActiveSheet()->getStyle('A1:J1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+    $objPHPExcel->getActiveSheet()->getStyle('A1:J1')->getAlignment()->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
     
     $columnWidth = 10;
     
@@ -56,7 +58,8 @@ $objPHPExcel->getProperties()->setCreator("Robert Kocjan")
     $objPHPExcel->getActiveSheet()->getColumnDimension('G')->setWidth($columnWidth);
 	$objPHPExcel->getActiveSheet()->getColumnDimension('H')->setWidth($columnWidth+5);
 	$objPHPExcel->getActiveSheet()->getColumnDimension('I')->setWidth($columnWidth-5);
-    $objPHPExcel->getActiveSheet()->getStyle('A1:I1')->getAlignment()->setWrapText(TRUE);
+	$objPHPExcel->getActiveSheet()->getColumnDimension('J')->setWidth($columnWidth-5);
+    $objPHPExcel->getActiveSheet()->getStyle('A1:J1')->getAlignment()->setWrapText(TRUE);
 
     $cellNo = 2;
 
@@ -73,19 +76,23 @@ $objPHPExcel->getProperties()->setCreator("Robert Kocjan")
                     $objPHPExcel->getActiveSheet()
                         ->getStyle('E'.$cellNo)
                         ->getFill()
-                        ->setFillType(PHPExcel_Style_Fill::FILL_SOLID)
+                        ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                         ->getStartColor()
                         ->setARGB('FFd6d6d6');
 
-                    $objPHPExcel->getActiveSheet()->getStyle('E'.$cellNo)->getFont()->setColor( new PHPExcel_Style_Color( PHPExcel_Style_Color::COLOR_RED ) );
+                    $objPHPExcel->getActiveSheet()->getStyle('E'.$cellNo)->getFont()->getColor()
+                        ->setARGB(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_RED );
             }
             
         $objPHPExcel->getActiveSheet()->getStyle('E'.$cellNo)->getNumberFormat()->setFormatCode('0.00%');
         $objPHPExcel->setActiveSheetIndex(0)->setCellValue('F'.$cellNo, '');//new retail
         $objPHPExcel->setActiveSheetIndex(0)->setCellValue('G'.$cellNo, marginFormula($cellNo));//new margin
         $objPHPExcel->getActiveSheet()->getStyle('G'.$cellNo)->getNumberFormat()->setFormatCode('0.00%');
-        $objPHPExcel->setActiveSheetIndex(0)->setCellValue('H'.$cellNo, $value->ean);
+        $objPHPExcel->getActiveSheet()->setCellValueExplicit('H' . $cellNo,$value->ean,
+            \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+//        $objPHPExcel->setActiveSheetIndex(0)->setCellValue('H'.$cellNo, $value->ean);
         $objPHPExcel->setActiveSheetIndex(0)->setCellValue('I'.$cellNo, $value->Tax);
+        $objPHPExcel->setActiveSheetIndex(0)->setCellValue('J'.$cellNo, $value->discount);
         $cellNo++;
     }
     
@@ -94,7 +101,7 @@ $objPHPExcel->getProperties()->setCreator("Robert Kocjan")
     /***********/
  
  if(count($productsArray) > 0){   
-    $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+    $objWriter = new Xlsx($objPHPExcel);
 
     //$objWriter->save(str_replace('.php', '.xlsx', __FILE__));
     $fileName = $brand.' - Margin raport '.date("Ymd");
@@ -132,6 +139,10 @@ $objPHPExcel->getProperties()->setCreator("Robert Kocjan")
 		$show .= "</div><br/>";
 	}
 	echo $show;
+
+
+
+
     function margin($retail,$cost,$tax){
         if($tax == '0'){
             return ($retail-$cost)/$retail;
@@ -149,14 +160,13 @@ $objPHPExcel->getProperties()->setCreator("Robert Kocjan")
         return '=if('.$retail.' = "","",(('.$retail.'/'.$tax.')-'.$cost.')/('.$retail.'/'.$tax.'))';
     }
     
-    function cellFormat($cell){
-        $objPHPExcel->getActiveSheet()
-            ->getStyle($cell)
-            ->getFill()
-            ->setFillType(PHPExcel_Style_Fill::FILL_SOLID)
-            ->getStartColor()
-            ->setARGB('FFd6d6d6');
-
-        $objPHPExcel->getActiveSheet()->getStyle($cell)->getFont()->setColor( new PHPExcel_Style_Color( PHPExcel_Style_Color::COLOR_RED ) );
-    }
-?>
+//    function cellFormat($cell){
+//        $objPHPExcel->getActiveSheet()
+//            ->getStyle($cell)
+//            ->getFill()
+//            ->setFillType(PHPExcel_Style_Fill::FILL_SOLID)
+//            ->getStartColor()
+//            ->setARGB('FFd6d6d6');
+//
+//        $objPHPExcel->getActiveSheet()->getStyle($cell)->getFont()->setColor( new PHPExcel_Style_Color( PHPExcel_Style_Color::COLOR_RED ) );
+//    }

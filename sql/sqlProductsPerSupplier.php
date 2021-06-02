@@ -1,7 +1,7 @@
 <?php
-    include("../class/classProduct.php");
-    include("../class/classDb.php");
-    include("../class/classXML.php");
+    include("../class/Product.php");
+    include("../class/DB.php");
+    include("../class/XML.php");
     
     set_time_limit(0);
     ini_set('max_execution_time', 3000);
@@ -11,10 +11,10 @@
     //s$storeOrAway = $_POST['storeOrAway'];
     $isDiscontinued = $_POST['isDiscontinued'];
     
-    $xml = new xmlFile('../dbXML.xml');
-    $db = new dbConnection($xml->getConnectionArray());
+    $xml = new XML('../dbXML.xml');
+    $db = new DB($xml->getConnectionArray());
     
-    $product = new product($db->getDbConnection(2));
+    $product = new Product($db->getDbConnection(2));
     echo $product->getDate().'<br/>';
     $allProductsFromSupp = $product->allProdFromSupplier($supplierName,$isDiscontinued);
     

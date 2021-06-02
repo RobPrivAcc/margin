@@ -13,9 +13,9 @@
   </head>
   <body>
     <?php
-        include("class/classProduct.php");
-        include("class/classDb.php");
-        include("class/classXML.php");
+        include("class/Product.php");
+        include("class/DB.php");
+        include("class/XML.php");
     ?>
     <div class="container">
       <div class="row">
@@ -37,9 +37,9 @@
       <div class="row">
         <div class='col-xs-10 col-10'>
           <?php
-          $xml = new xmlFile($_SERVER["DOCUMENT_ROOT"].'/dbXML.xml');
-          $db = new dbConnection($xml->getConnectionArray());
-            $details = new product($db->getDbConnection(2));
+          $xml = new XML($_SERVER["DOCUMENT_ROOT"].'/dbXML.xml');
+          $db = new DB($xml->getConnectionArray());
+            $details = new Product($db->getDbConnection(2));
 
             $select = "<select id='brandName' class='selectpicker form-control'>";
             $select .= "<option>Choose brand</option>";
